@@ -27,6 +27,8 @@ var canonicals = map[string]string{
 	"video/mp4":        ".mp4",
 	"video/ogg":        ".ogv",
 	"video/mp2t":       ".ts",
+	"audio/webm":       ".webm",
+	"audio/mp4":        ".m4a",
 }
 
 func pickIdealFileExtension(mediaType string) string {

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,7 @@ var (
 	ffmpegCheck error
 	outputFile  string
 	outputDir   string
+	itagString  string
 )
 
 func init() {
@@ -32,6 +34,7 @@ func init() {
 
 	downloadCmd.Flags().StringVarP(&outputFile, "filename", "o", "", "The output file, the default is genated by the video title.")
 	downloadCmd.Flags().StringVarP(&outputDir, "directory", "d", ".", "The output directory.")
+	downloadCmd.Flags().StringVarP(&itagString, "itag", "i", "", "Itag number of the stream.")
 	addQualityFlag(downloadCmd.Flags())
 	addMimeTypeFlag(downloadCmd.Flags())
 }
@@ -43,6 +46,14 @@ func download(id string) error {
 	}
 
 	log.Println("download to directory", outputDir)
+
+        if itagString != "" {
+                itagNo, err := strconv.Atoi(itagString)
+                if err != nil {
+                        return fmt.Errorf("Invalid Itag number %s", itagString)
+                }
+                return downloader.DownloadByItag(context.Background(), outputFile, video, itagNo)
+        }
 
 	if strings.HasPrefix(outputQuality, "hd") {
 		if err := checkFFMPEG(); err != nil {

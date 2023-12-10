@@ -122,6 +122,41 @@ func (dl *Downloader) DownloadComposite(ctx context.Context, outputFile string, 
 	return ffmpegVersionCmd.Run()
 }
 
+// DownloadAudio : Downloads audio stream only. 
+func (dl *Downloader) DownloadByItag(ctx context.Context, outputFile string, v *youtube.Video, itag int) error {
+	format, err1 := getFormatByItag(v, itag)
+	if err1 != nil {
+		return err1
+	}
+
+	log := youtube.Logger.With("id", v.ID)
+
+	log.Info(
+		"Downloading stream",
+		"mimeType", format.MimeType,
+	)
+
+	destFile, err := dl.getOutputFile(v, format, outputFile)
+	if err != nil {
+		return err
+	}
+
+	// Create output file
+	outFile, err := os.Create(destFile)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	log.Debug("Downloading...")
+	err = dl.videoDLWorker(ctx, outFile, v, format)
+	if err != nil {
+		return err
+	}
+
+        return nil
+}
+
 func getVideoAudioFormats(v *youtube.Video, quality string, mimetype string) (*youtube.Format, *youtube.Format, error) {
 	var videoFormat, audioFormat *youtube.Format
 	var videoFormats, audioFormats youtube.FormatList
@@ -157,6 +192,17 @@ func getVideoAudioFormats(v *youtube.Video, quality string, mimetype string) (*y
 	}
 
 	return videoFormat, audioFormat, nil
+}
+
+func getFormatByItag(v *youtube.Video, itag int) (*youtube.Format, error) {
+	formats := v.Formats
+        r := formats.FindByItag(itag)
+
+        if r == nil {
+		return nil, fmt.Errorf("no audio format found")
+	}
+
+        return r, nil
 }
 
 func (dl *Downloader) videoDLWorker(ctx context.Context, out *os.File, video *youtube.Video, format *youtube.Format) error {
